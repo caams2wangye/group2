@@ -77,6 +77,15 @@ def get_model(options):
 
     if options.head == 'ProtoNet':
         cls_head = ClassificationHead(base_learner='proto').cuda()
+        cls_head = ClassificationHead(base_learner='proto').cuda()
+    elif options.head == 'cls_head1':
+        cls_head = ClassificationHead(base_learner='cls_head1').cuda()
+    elif options.head == 'cls_head2':
+        cls_head = ClassificationHead(base_learner='cls_head2').cuda()
+    elif options.head == 'cls_head3':
+        cls_head = ClassificationHead(base_learner='cls_head3').cuda()
+    elif options.head == 'fusion_head':
+        cls_head = ClassificationHead(base_learner='fusion_head').cuda()
     else:
         print("cls_head is not correct!")
         assert False
