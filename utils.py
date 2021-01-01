@@ -77,15 +77,6 @@ def get_model(options):
 
     if options.head == 'ProtoNet':
         cls_head = ClassificationHead(base_learner='proto').cuda()
-        cls_head = ClassificationHead(base_learner='proto').cuda()
-    elif options.head == 'cls_head1':
-        cls_head = ClassificationHead(base_learner='cls_head1').cuda()
-    elif options.head == 'cls_head2':
-        cls_head = ClassificationHead(base_learner='cls_head2').cuda()
-    elif options.head == 'cls_head3':
-        cls_head = ClassificationHead(base_learner='cls_head3').cuda()
-    elif options.head == 'fusion_head':
-        cls_head = ClassificationHead(base_learner='fusion_head').cuda()
     else:
         print("cls_head is not correct!")
         assert False
@@ -276,24 +267,22 @@ def data_split(original_data, n_way, n_shot, n_query):  # batch = (n_way * n_sho
         task_per_batch = int(total_samples / sample_in_each_task)
 
     labels = cls2label(labels)
+    n_support = n_way * n_shot
+    n_query = n_way * n_query
     # initialize output
     data_support_ = torch.Tensor().cuda()
     labels_support_ = torch.LongTensor().cuda()
     data_query_ = torch.Tensor().cuda()
     labels_query_ = torch.LongTensor().cuda()
     for task_index in range(task_per_batch):
-        for cls_index in range(n_way):
-            cls = cls_index + task_index * n_way
-            support_temp = data[(cls * (n_query + n_shot)):(cls * (n_query + n_shot) + n_shot)]
-            support_label_temp = labels[(cls * (n_query + n_shot)):(cls * (n_query + n_shot) + n_shot)]
-
-            query_temp = data[(cls * (n_query + n_shot) + n_shot):(cls * (n_query + n_shot) + n_shot + n_query)]
-            query_label_temp = labels[(cls * (n_query + n_shot) + n_shot):(cls * (n_query + n_shot) + n_shot + n_query)]
-
-            data_support_ = torch.cat([data_support_, support_temp], 0)
-            labels_support_ = torch.cat([labels_support_, support_label_temp], 0)
-            data_query_ = torch.cat([data_query_, query_temp], 0)
-            labels_query_ = torch.cat([labels_query_, query_label_temp], 0)
+        support_temp = data[:n_support]
+        support_label_temp = labels[:n_support]
+        query_temp = data[n_support:n_support+n_query]
+        query_label_temp = labels[n_support:n_support+n_query]
+        data_support_ = torch.cat([data_support_, support_temp], 0)
+        labels_support_ = torch.cat([labels_support_, support_label_temp], 0)
+        data_query_ = torch.cat([data_query_, query_temp], 0)
+        labels_query_ = torch.cat([labels_query_, query_label_temp], 0)
 
     return data_support_, labels_support_, data_query_, labels_query_
 
