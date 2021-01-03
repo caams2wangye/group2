@@ -77,6 +77,14 @@ def get_model(options):
 
     if options.head == 'ProtoNet':
         cls_head = ClassificationHead(base_learner='proto').cuda()
+    elif options.head == 'cls_head1':
+        cls_head = ClassificationHead(base_learner='cls_head1').cuda()
+    elif options.head == 'cls_head2':
+        cls_head = ClassificationHead(base_learner='cls_head2').cuda()
+    elif options.head == 'cls_head3':
+        cls_head = ClassificationHead(base_learner='cls_head3').cuda()
+    elif options.head == 'fusion_head':
+        cls_head = ClassificationHead(base_learner='fusion_head').cuda()
     else:
         print("cls_head is not correct!")
         assert False
@@ -256,6 +264,10 @@ def get_batch_dataloader(option, state):
     return loader
 
 
+""""
+data:
+    [n_way*n_shot*task_per_batch]+[n_way*n_query*task_per_batch]
+"""
 def data_split(original_data, n_way, n_shot, n_query):  # batch = (n_way * n_shot, 3, 84, 84)  equal to task
     # extract data and label from original data
     data, labels = [x.cuda() for x in original_data]
@@ -267,87 +279,44 @@ def data_split(original_data, n_way, n_shot, n_query):  # batch = (n_way * n_sho
         task_per_batch = int(total_samples / sample_in_each_task)
 
     labels = cls2label(labels)
-    n_support = n_way * n_shot
-    n_query = n_way * n_query
     # initialize output
     data_support_ = torch.Tensor().cuda()
     labels_support_ = torch.LongTensor().cuda()
     data_query_ = torch.Tensor().cuda()
     labels_query_ = torch.LongTensor().cuda()
-    for task_index in range(task_per_batch):
-        support_temp = data[:n_support]
-        support_label_temp = labels[:n_support]
-        query_temp = data[n_support:n_support+n_query]
-        query_label_temp = labels[n_support:n_support+n_query]
-        data_support_ = torch.cat([data_support_, support_temp], 0)
-        labels_support_ = torch.cat([labels_support_, support_label_temp], 0)
-        data_query_ = torch.cat([data_query_, query_temp], 0)
-        labels_query_ = torch.cat([labels_query_, query_label_temp], 0)
+    n_support = n_way * n_shot * task_per_batch
+    n_query = n_way * n_query * task_per_batch
+    n_total = n_way * (n_shot + n_query)
+    support_temp = data[:n_support]
+    support_label_temp = labels[:n_support]
+    query_temp = data[n_support:n_support + n_query]
+    query_label_temp = labels[n_support:n_support + n_query]
+    data_support_ = torch.cat([data_support_, support_temp], 0)
+    labels_support_ = torch.cat([labels_support_, support_label_temp], 0)
+    data_query_ = torch.cat([data_query_, query_temp], 0)
+    labels_query_ = torch.cat([labels_query_, query_label_temp], 0)
+
+    # for task_index in range(task_per_batch):
+    #     support_temp = data[task_index*n_total:task_index*n_total+n_support]
+    #     support_label_temp = labels[task_index*n_total:task_index*n_total+n_support]
+    #     query_temp = data[task_index*n_total+n_support:task_index*n_total+n_support+n_query]
+    #     query_label_temp = labels[task_index*n_total+n_support:task_index*n_total+n_support+n_query]
+    #     data_support_ = torch.cat([data_support_, support_temp], 0)
+    #     labels_support_ = torch.cat([labels_support_, support_label_temp], 0)
+    #     data_query_ = torch.cat([data_query_, query_temp], 0)
+    #     labels_query_ = torch.cat([labels_query_, query_label_temp], 0)
+
+    # for cls_index in range(n_way):
+    #     cls = cls_index + task_index * n_way
+    #     support_temp = data[(cls * (n_query + n_shot)):(cls * (n_query + n_shot) + n_shot)]
+    #     support_label_temp = labels[(cls * (n_query + n_shot)):(cls * (n_query + n_shot) + n_shot)]
+    #
+    #     query_temp = data[(cls * (n_query + n_shot) + n_shot):(cls * (n_query + n_shot) + n_shot + n_query)]
+    #     query_label_temp = labels[(cls * (n_query + n_shot) + n_shot):(cls * (n_query + n_shot) + n_shot + n_query)]
+    #
+    #     data_support_ = torch.cat([data_support_, support_temp], 0)
+    #     labels_support_ = torch.cat([labels_support_, support_label_temp], 0)
+    #     data_query_ = torch.cat([data_query_, query_temp], 0)
+    #     labels_query_ = torch.cat([labels_query_, query_label_temp], 0)
 
     return data_support_, labels_support_, data_query_, labels_query_
-
-
-# """
-# batches:
-#     loader_train:
-#             data:
-#                 (n_shot, image.size())
-#             labels:
-#                 (n_query, image.size())
-#     loader_train:
-#
-# """
-#
-#
-# def get_batch_dataloader(option):
-#     sample_info_train = [option.train_iter, option.n_way, option.train_shot, option.train_query]
-#     sample_info_val = [option.val_iter, option.n_way, option.val_shot, option.val_query]
-#     batch_loader_train = []
-#     batch_loader_val = []
-#     if option.aug:
-#         transform_ = transform.with_augment(84, disable_random_resize=False)
-#     else:
-#         transform_ = transform.without_augment(84, enlarge=False)
-#     if option.dataset == 'miniImageNet':
-#         root_train = './datasets/mini-imagenet/train'
-#         split_dir = './datasets/mini-imagenet'
-#         split_type_train = 'train'
-#         root_val = './datasets/mini-imagenet/val'
-#         split_type_val = 'val'
-#         dataset_train = datasets_loader.DatasetFolder(root_train, split_dir, split_type_train, transform_,
-#                                                       out_name=False)
-#         dataset_val = datasets_loader.DatasetFolder(root_val, split_dir, split_type_val, transform_,
-#                                                     out_name=False)
-#         for batch in range(option.episodes_per_batch):
-#             sampler_train = sampler.CategoriesSampler(dataset_train.labels, *sample_info_train)
-#             sampler_val = sampler.CategoriesSampler(dataset_val.labels, *sample_info_val)
-#             loader_train = torch.utils.data.DataLoader(dataset_train, batch_sampler=sampler_train,
-#                                                        num_workers=option.workers, pin_memory=True)
-#             loader_val = torch.utils.data.DataLoader(dataset_val, batch_sampler=sampler_val,
-#                                                      num_workers=option.workers, pin_memory=True)
-#             batch_loader_train.append(loader_train)
-#             batch_loader_val.append(loader_val)
-#     elif option.dataset == 'Cifar-FS':
-#         root_ = './datasets/cifar-fs/CIFAR-FS/cifar100/data'
-#         split_dir_ = './datasets/cifar-fs/CIFAR-FS/cifar100'
-#         split_type_train = 'train'
-#         split_type_val = 'val'
-#         dataset_train = datasets_loader.DatasetFolder(root_, split_dir_, split_type_train, transform_,
-#                                                       out_name=False)
-#         dataset_val = datasets_loader.DatasetFolder(root_, split_dir_, split_type_val, transform_,
-#                                                     out_name=False)
-#         for batch in range(option.episodes_per_batch):
-#             sampler_train = sampler.CategoriesSampler(dataset_train.labels, *sample_info_train)
-#             sampler_val = sampler.CategoriesSampler(dataset_val.labels, *sample_info_val)
-#             loader_train = torch.utils.data.DataLoader(dataset_train, batch_sampler=sampler_train,
-#                                                        num_workers=option.workers, pin_memory=True)
-#             loader_val = torch.utils.data.DataLoader(dataset_val, batch_sampler=sampler_val,
-#                                                      num_workers=option.workers, pin_memory=True)
-#             batch_loader_train.append(loader_train)
-#             batch_loader_val.append(loader_val)
-#
-#     else:
-#         print("incorrect dataset name!")
-#         assert False
-#
-#     return batch_loader_train, batch_loader_val
