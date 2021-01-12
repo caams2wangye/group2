@@ -13,7 +13,7 @@ for each batch, we have 'task_per_batch' tasks
 for each task, we have n_way * (n_shot + n_query) samples and tasks in same batch share same label space
 
 """
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0,3,6,9"
 
 
 def set_parameters(parser):
@@ -26,36 +26,36 @@ def set_parameters(parser):
                         help='datasets')
     parser.add_argument('--aug', type=bool, default=False,
                         help='whether to use augmentation method')
-    parser.add_argument('--workers', type=int, default=4,
+    parser.add_argument('--workers', type=int, default=2,
                         help='num of thread to process image')
     #  task setting
     parser.add_argument('--n-way', type=int, default=5,
                         help='n_way')
-    parser.add_argument('--train-shot', type=int, default=1,
+    parser.add_argument('--train-shot', type=int, default=5,
                         help='n_shot')
-    parser.add_argument('--val_shot', type=int, default=1,
+    parser.add_argument('--val_shot', type=int, default=5,
                         help='n_shot for validation')
-    parser.add_argument('--train_query', type=int, default=2,
+    parser.add_argument('--train_query', type=int, default=1,
                         help='n_query')
-    parser.add_argument('--val_query', type=int, default=1,
+    parser.add_argument('--val_query', type=int, default=5,
                         help='n_query for validation')
     # training setting
-    parser.add_argument('--batches', type=int, default=2,
+    parser.add_argument('--batches', type=int, default=500,
                         help='number of batches used to train in each epoch')
-    parser.add_argument('--task-per-batch', type=int, default=2,
+    parser.add_argument('--task-per-batch', type=int, default=10,
                         help='number of tasks in each batch')
-    parser.add_argument('--num-epoch', type=int, default=50,
+    parser.add_argument('--num-epoch', type=int, default=80,
                         help='number of training epochs')
     # validation setting
-    parser.add_argument('--val-iter', type=int, default=1,
+    parser.add_argument('--val-iter', type=int, default=10000,
                         help='num of tasks used to validation')
     # model save setting
-    parser.add_argument('--save-epoch', type=int, default=1,
+    parser.add_argument('--save-epoch', type=int, default=10,
                         help='frequency of model saving')
     parser.add_argument('--save-path', default='./experiments/exp_1',
                         help='save_path')
     # environment setting
-    parser.add_argument('--gpu', default='0',
+    parser.add_argument('--gpu', default='0,3,6,9',
                         help='index of gpu will be used')
     return parser
 
