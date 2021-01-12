@@ -1,13 +1,9 @@
-import os
 import argparse
-import numpy as np
-from tqdm import tqdm
-import torch
+
 import torch.nn.functional as F
 
 from models.classification_heads import one_hot
 from utils import *
-from datasets import transform, sampler, datasets_loader
 
 # D:\Group2_Homework
 """
@@ -18,27 +14,28 @@ for each task, we have n_way * (n_shot + n_query) samples and tasks in same batc
 
 """
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+
+
+def set_parameters(parser):
     # main setting
     parser.add_argument('--network', type=str, default='Conv4',
                         help='feature extracting backbone')
-    parser.add_argument('--head', type=str, default='ProtoNet',
+    parser.add_argument('--head', type=str, default='cosin',
                         help='classification head')
     parser.add_argument('--dataset', type=str, default='miniImageNet',
                         help='datasets')
     parser.add_argument('--aug', type=bool, default=False,
                         help='whether to use augmentation method')
-    parser.add_argument('--workers', type=int, default=2,
+    parser.add_argument('--workers', type=int, default=4,
                         help='num of thread to process image')
     #  task setting
     parser.add_argument('--n-way', type=int, default=5,
                         help='n_way')
-    parser.add_argument('--train-shot', type=int, default=2,
+    parser.add_argument('--train-shot', type=int, default=1,
                         help='n_shot')
-    parser.add_argument('--val_shot', type=int, default=2,
+    parser.add_argument('--val_shot', type=int, default=1,
                         help='n_shot for validation')
-    parser.add_argument('--train_query', type=int, default=1,
+    parser.add_argument('--train_query', type=int, default=2,
                         help='n_query')
     parser.add_argument('--val_query', type=int, default=1,
                         help='n_query for validation')
@@ -47,7 +44,7 @@ if __name__ == '__main__':
                         help='number of batches used to train in each epoch')
     parser.add_argument('--task-per-batch', type=int, default=2,
                         help='number of tasks in each batch')
-    parser.add_argument('--num-epoch', type=int, default=2,
+    parser.add_argument('--num-epoch', type=int, default=50,
                         help='number of training epochs')
     # validation setting
     parser.add_argument('--val-iter', type=int, default=1,
@@ -60,11 +57,17 @@ if __name__ == '__main__':
     # environment setting
     parser.add_argument('--gpu', default='0',
                         help='index of gpu will be used')
+    return parser
+
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser = set_parameters(parser)
     opt = parser.parse_args()
     print(opt)
 
     set_gpu(opt.gpu)
-
     check_dir('./experiments/')
     check_dir(opt.save_path)
 
@@ -78,13 +81,10 @@ if __name__ == '__main__':
         0.025 if e < 30 else 0.0032 if e < 45 else (0.0014 if e < 57 else 0.00052))
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_epoch, last_epoch=-1)
     max_val_acc = 0.0
-
     timer = Timer()
     x_entropy = torch.nn.CrossEntropyLoss()
 
     for epoch in range(1, opt.num_epoch + 1):
-        lr_scheduler.step()
-
         epoch_learning_rate = 0.1
         for param_group in optimizer.param_groups:
             epoch_learning_rate = param_group['lr']
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         train_accuracies = []
         train_losses = []
 
-        loader_train = get_batch_dataloader(opt, 'train')
+        loader_train = get_dataloader(opt, 'train')
         loader_val = get_dataloader(opt, 'val')
         for i, batch in enumerate(loader_train):
             data_support, labels_support, data_query, labels_query = data_split(batch,
@@ -122,7 +122,6 @@ if __name__ == '__main__':
 
             train_accuracies.append(acc.item())
             train_losses.append(loss.item())
-
             if i % 100 == 0:
                 train_acc_avg = np.mean(np.array(train_accuracies))
                 log(log_file_path, 'Train Epoch:{}\tTask:[{}/{}]\tLoss:{:.4f}\tAccuracy:{:.2f} % ({:.2f})%'.format(
@@ -131,6 +130,7 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+        lr_scheduler.step()
 
         _, _ = [x.eval() for x in (network, cls_head)]
         val_accuracies = []

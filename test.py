@@ -16,13 +16,13 @@ if __name__ == '__main__':
                         help='whether to use augmentation method')
     parser.add_argument('--workers', type=int, default=2,
                         help='num of thread to process image')
-    parser.add_argument('--test_iter', type=int, default=1,
+    parser.add_argument('--test_iter', type=int, default=5,
                         help='num of tasks used to evaluate model')
     parser.add_argument('--n-way', type=int, default=5,
                         help='num of classes in task setting')
-    parser.add_argument('--test-shot', type=int, default=1,
+    parser.add_argument('--test-shot', type=int, default=2,
                         help='num of examples will be sampled in each cls')
-    parser.add_argument('--test-query', type=int, default=1,
+    parser.add_argument('--test-query', type=int, default=3,
                         help='num of samples used to test in each cls')
     parser.add_argument('--save-path', default='./experiments/exp_1',
                         help='save_path')
