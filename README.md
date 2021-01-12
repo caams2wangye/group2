@@ -9,13 +9,13 @@ This repository contained the code for the similarity metric method introduced i
 - after you got the dataset, you must substitute 'datasets' you cloned in github with 'datasets' you download from Baidu Disk
 ### 3.Training model
 - to train the model, do
-'''angular2
+```angular2
 cd .\Group2_Homework  # this is you root dir
 python train.py
-'''
+```
 - to evaluate the model, do
-'''
+```
 python test.py
-'''
+```
 
 
