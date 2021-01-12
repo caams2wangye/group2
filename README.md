@@ -5,6 +5,7 @@
 -pytorch 1.6
 ### 2.Download Datasets
 -you can download dataset from https://pan.baidu.com/s/1iufQDXBOOIlugTuOLTXXCQ with code:p4iq 
+# Caution
 -after you got the dataset, you must substitute 'datasets' you cloned in github with 'datasets' you download from Baidu Disk
 
 
