@@ -14,7 +14,7 @@ cd .\Group2_Homework  # this is you root dir
 python train.py
 ```
 - to evaluate the model, do
-```
+```angular1
 python test.py
 ```
 
